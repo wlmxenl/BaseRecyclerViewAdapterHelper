@@ -104,10 +104,6 @@ class BinderUseActivityKotlin : BaseActivity() {
      */
     private class ImageItemBinder : QuickItemBinder<ImageEntity>() {
 
-        override fun getLayoutId(): Int {
-            return R.layout.item_image_view
-        }
-
         override fun convert(holder: BaseViewHolder, data: ImageEntity) {
             // 设置数据
         }
@@ -118,12 +114,17 @@ class BinderUseActivityKotlin : BaseActivity() {
         override fun onClick(holder: BaseViewHolder, view: View, data: ImageEntity, position: Int) {
             Toast.makeText(context, "click index: $position", Toast.LENGTH_SHORT).show()
         }
+
+        override fun getLayoutId(): Int {
+            return R.layout.item_image_view
+        }
     }
 
     /**
      * 使用 ViewBinding，快速创建Binder
      */
     private class ImageTextItemBinder : QuickViewBindingItemBinder<Video, ItemImgTextViewBinding>() {
+
         override fun onCreateViewBinding(layoutInflater: LayoutInflater, parent: ViewGroup, viewType: Int): ItemImgTextViewBinding {
             return ItemImgTextViewBinding.inflate(layoutInflater, parent, false)
         }
@@ -144,6 +145,10 @@ class BinderUseActivityKotlin : BaseActivity() {
                 return oldItem.name == newItem.name
             }
         }
+
+        override fun getLayoutId(): Int {
+            return R.layout.item_img_text_view
+        }
     }
 
     /**
@@ -161,19 +166,28 @@ class BinderUseActivityKotlin : BaseActivity() {
             binding.presenter = mPresenter
             binding.executePendingBindings()
         }
+
+        override fun getLayoutId(): Int {
+            return R.layout.item_movie
+        }
     }
 
     /**
      * 使用最基础的 BaseItemBinder 创建 Binder
      */
     private class ContentItemBinder : BaseItemBinder<ContentEntity, BaseViewHolder>() {
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BaseViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_text_view, parent, false)
+            val view = LayoutInflater.from(parent.context).inflate(getLayoutId(), parent, false)
             return BaseViewHolder(view)
         }
 
         override fun convert(holder: BaseViewHolder, data: ContentEntity) {
             holder.setText(R.id.tv, data.content)
+        }
+
+        override fun getLayoutId(): Int {
+            return R.layout.item_text_view
         }
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IdRes
+import androidx.annotation.LayoutRes
 import com.chad.library.adapter.base.BaseBinderAdapter
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
 
@@ -140,4 +141,8 @@ abstract class BaseItemBinder<T, VH : BaseViewHolder> {
     }
 
     fun getChildLongClickViewIds() = this.longClickViewIds
+
+
+    @LayoutRes
+    abstract fun getLayoutId(): Int
 }

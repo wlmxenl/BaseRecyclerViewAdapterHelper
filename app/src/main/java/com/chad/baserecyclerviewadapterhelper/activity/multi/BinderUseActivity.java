@@ -15,10 +15,13 @@ import com.chad.baserecyclerviewadapterhelper.base.BaseActivity;
 import com.chad.baserecyclerviewadapterhelper.databinding.ActivityMultipleItemUseBinding;
 import com.chad.baserecyclerviewadapterhelper.databinding.ItemImgTextViewBinding;
 import com.chad.baserecyclerviewadapterhelper.databinding.ItemMovieBinding;
+import com.chad.baserecyclerviewadapterhelper.databinding.ItemOneToMany1Binding;
+import com.chad.baserecyclerviewadapterhelper.databinding.ItemOneToMany2Binding;
 import com.chad.baserecyclerviewadapterhelper.entity.ContentEntity;
 import com.chad.baserecyclerviewadapterhelper.entity.ImageEntity;
 import com.chad.baserecyclerviewadapterhelper.entity.Movie;
 import com.chad.baserecyclerviewadapterhelper.entity.MoviePresenter;
+import com.chad.baserecyclerviewadapterhelper.entity.OneToMany;
 import com.chad.baserecyclerviewadapterhelper.entity.Video;
 import com.chad.baserecyclerviewadapterhelper.utils.Tips;
 import com.chad.library.adapter.base.BaseBinderAdapter;
@@ -33,6 +36,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import kotlin.jvm.functions.Function1;
 
 /**
  * @author: limuyang
@@ -64,8 +69,23 @@ public class BinderUseActivity extends BaseActivity {
         adapter.addItemBinder(ImageEntity.class, new ImageItemBinder()) // QuickItemBinder
                 .addItemBinder(Video.class, new ImageTextItemBinder(), new ImageTextItemBinder.Differ()) // QuickViewBindingItemBinder, 并且注册了 Diff
                 .addItemBinder(Movie.class, new MovieItemBinder()) // QuickDataBindingItemBinder
-                .addItemBinder(ContentEntity.class, new ContentItemBinder()); // BaseItemBinder
+                .addItemBinder(ContentEntity.class, new ContentItemBinder()); //
 
+        // 数据实体类一对多
+        OneToMany1ItemBinder oneToMany1ItemBinder = new OneToMany1ItemBinder();
+        OneToMany2ItemBinder oneToMany2ItemBinder = new OneToMany2ItemBinder();
+
+        Function1<OneToMany, Integer> itemTypeBlock = oneToMany -> {
+            if (oneToMany.getType() == 1) {
+                return oneToMany1ItemBinder.getLayoutId();
+            }
+            return oneToMany2ItemBinder.getLayoutId();
+        };
+
+        adapter.addItemBinder(OneToMany.class, oneToMany1ItemBinder, null, itemTypeBlock);
+        adapter.addItemBinder(OneToMany.class, oneToMany2ItemBinder, null, itemTypeBlock);
+
+        // 添加头部
         View headView = getLayoutInflater().inflate(R.layout.head_view, null, false);
         headView.findViewById(R.id.iv).setVisibility(View.GONE);
         headView.setOnClickListener(v -> Tips.show("HeaderView"));
@@ -85,6 +105,10 @@ public class BinderUseActivity extends BaseActivity {
         List<Object> data = new ArrayList<>();
         data.add(new ImageEntity());
         data.add(new ImageEntity());
+        data.add(new OneToMany(1));
+        data.add(new OneToMany(2));
+        data.add(new OneToMany(2));
+        data.add(new OneToMany(1));
         data.add(new Video(1, "", "Video 1"));
         data.add(new Video(2, "", "Video 2"));
         data.add(new Movie("Chad 1", 0, random.nextInt(5) + 10, "He was one of Australia's most distinguished artistes"));
@@ -125,17 +149,17 @@ public class BinderUseActivity extends BaseActivity {
     private final static class ImageItemBinder extends QuickItemBinder<ImageEntity> {
 
         @Override
-        public int getLayoutId() {
-            return R.layout.item_image_view;
-        }
-
-        @Override
         public void convert(@NotNull BaseViewHolder holder, ImageEntity data) {
         }
 
         @Override
         public void onClick(@NotNull BaseViewHolder holder, @NotNull View view, ImageEntity data, int position) {
             Toast.makeText(getContext(), "click index: " + position, Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public int getLayoutId() {
+            return R.layout.item_image_view;
         }
     }
 
@@ -153,6 +177,11 @@ public class BinderUseActivity extends BaseActivity {
         @Override
         public void convert(@NotNull BinderVBHolder<ItemImgTextViewBinding> holder, Video data) {
             holder.getViewBinding().tv.setText("(ViewBinding) " + data.getName());
+        }
+
+        @Override
+        public int getLayoutId() {
+            return R.layout.item_img_text_view;
         }
 
         /**
@@ -191,22 +220,70 @@ public class BinderUseActivity extends BaseActivity {
             binding.setPresenter(mPresenter);
             binding.executePendingBindings();
         }
+
+        @Override
+        public int getLayoutId() {
+            return R.layout.item_movie;
+        }
     }
 
     /**
      * 使用最基础的 BaseItemBinder 创建 Binder
      */
     private static class ContentItemBinder extends BaseItemBinder<ContentEntity, BaseViewHolder> {
+
         @NotNull
         @Override
         public BaseViewHolder onCreateViewHolder(@NotNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_text_view, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(getLayoutId(), parent, false);
             return new BaseViewHolder(view);
         }
 
         @Override
         public void convert(@NotNull BaseViewHolder holder, ContentEntity data) {
             holder.setText(R.id.tv, data.getContent());
+        }
+
+        @Override
+        public int getLayoutId() {
+            return R.layout.item_text_view;
+        }
+    }
+
+    private final static class OneToMany1ItemBinder extends QuickViewBindingItemBinder<OneToMany, ItemOneToMany1Binding> {
+
+        @Override
+        public void convert(@NonNull BinderVBHolder<ItemOneToMany1Binding> holder, OneToMany data) {
+
+        }
+
+        @NonNull
+        @Override
+        public ItemOneToMany1Binding onCreateViewBinding(@NonNull LayoutInflater layoutInflater, @NonNull ViewGroup parent, int viewType) {
+            return ItemOneToMany1Binding.inflate(layoutInflater, parent, false);
+        }
+
+        @Override
+        public int getLayoutId() {
+            return R.layout.item_one_to_many_1;
+        }
+    }
+
+    private final static class OneToMany2ItemBinder extends QuickViewBindingItemBinder<OneToMany, ItemOneToMany2Binding> {
+        @Override
+        public void convert(@NonNull BinderVBHolder<ItemOneToMany2Binding> holder, OneToMany data) {
+
+        }
+
+        @NonNull
+        @Override
+        public ItemOneToMany2Binding onCreateViewBinding(@NonNull LayoutInflater layoutInflater, @NonNull ViewGroup parent, int viewType) {
+            return ItemOneToMany2Binding.inflate(layoutInflater, parent, false);
+        }
+
+        @Override
+        public int getLayoutId() {
+            return R.layout.item_one_to_many_2;
         }
     }
 }

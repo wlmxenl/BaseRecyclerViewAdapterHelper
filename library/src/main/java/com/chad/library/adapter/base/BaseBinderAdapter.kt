@@ -29,7 +29,7 @@ open class BaseBinderAdapter(list: MutableList<Any>? = null) : BaseQuickAdapter<
      */
     private val classDiffMap = HashMap<Class<*>, DiffUtil.ItemCallback<Any>?>()
 
-    private val mTypeMap = HashMap<Class<*>, Int>()
+    private val mTypeMap = HashMap<Class<*>, Any.() -> Int>()
     private val mBinderArray = SparseArray<BaseItemBinder<Any, *>>()
 
     init {
@@ -40,9 +40,14 @@ open class BaseBinderAdapter(list: MutableList<Any>? = null) : BaseQuickAdapter<
      * 添加 ItemBinder
      */
     @JvmOverloads
-    fun <T : Any> addItemBinder(clazz: Class<out T>, baseItemBinder: BaseItemBinder<T, *>, callback: DiffUtil.ItemCallback<T>? = null): BaseBinderAdapter {
-        val itemType = mTypeMap.size + 1
-        mTypeMap[clazz] = itemType
+    fun <T : Any> addItemBinder(
+        clazz: Class<out T>,
+        baseItemBinder: BaseItemBinder<T, *>,
+        callback: DiffUtil.ItemCallback<T>? = null,
+        itemTypeBlock: T.() -> Int = { baseItemBinder.getLayoutId() }
+    ): BaseBinderAdapter {
+        val itemType = baseItemBinder.getLayoutId()
+        mTypeMap[clazz] = itemTypeBlock as Any.() -> Int
         mBinderArray.append(itemType, baseItemBinder as BaseItemBinder<Any, *>)
         baseItemBinder._adapter = this
         callback?.let {
@@ -54,8 +59,13 @@ open class BaseBinderAdapter(list: MutableList<Any>? = null) : BaseQuickAdapter<
     /**
      * kotlin 可以使用如下方法添加 ItemBinder，更加简单
      */
-    inline fun <reified T : Any> addItemBinder(baseItemBinder: BaseItemBinder<T, *>, callback: DiffUtil.ItemCallback<T>? = null): BaseBinderAdapter {
-        addItemBinder(T::class.java, baseItemBinder, callback)
+    @JvmOverloads
+    inline fun <reified T : Any> addItemBinder(
+        baseItemBinder: BaseItemBinder<T, *>,
+        callback: DiffUtil.ItemCallback<T>? = null,
+        noinline itemTypeBlock: T.() -> Int = { baseItemBinder.getLayoutId() }
+    ): BaseBinderAdapter {
+        addItemBinder(T::class.java, baseItemBinder, callback, itemTypeBlock)
         return this
     }
 
@@ -86,7 +96,7 @@ open class BaseBinderAdapter(list: MutableList<Any>? = null) : BaseQuickAdapter<
     }
 
     override fun getDefItemViewType(position: Int): Int {
-        return findViewType(data[position].javaClass)
+        return findViewType(data[position])
     }
 
     override fun bindViewClickListener(viewHolder: BaseViewHolder, viewType: Int) {
@@ -110,10 +120,10 @@ open class BaseBinderAdapter(list: MutableList<Any>? = null) : BaseQuickAdapter<
         return getItemBinderOrNull(holder.itemViewType)?.onFailedToRecycleView(holder) ?: false
     }
 
-    protected fun findViewType(clazz : Class<*>):Int {
-        val type = mTypeMap[clazz]
-        checkNotNull(type) { "findViewType: ViewType: $clazz Not Find!" }
-        return type
+    protected fun findViewType(itemData : Any):Int {
+        val itemTypeBlock = mTypeMap[itemData::class.java]
+        checkNotNull(itemTypeBlock) { "findViewType: ViewType: ${itemData::class.java} Not Find!" }
+        return itemTypeBlock.invoke(itemData)
     }
 
     protected open fun bindClick(viewHolder: BaseViewHolder) {
